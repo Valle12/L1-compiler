@@ -2,17 +2,18 @@ package de.valle12.lexer;
 
 import de.valle12.lexer.regex.Regex;
 import de.valle12.lexer.tokens.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@RequiredArgsConstructor
+// TODO add support for comments and line numbers
 public class Lexer {
   private final String input;
   private final Map<TokenType, Regex> regexes =
@@ -24,15 +25,9 @@ public class Lexer {
                   (oldValue, newValue) -> oldValue,
                   () -> new EnumMap<>(TokenType.class)));
   private int currentPosition = 0;
-
-  @SneakyThrows
-  public Lexer() {
-    this.input =
-        Files.readString(Path.of(getClass().getClassLoader().getResource("test.l1").toURI()));
-  }
+  private int longestMatchLength = 0;
 
   public void start() {
-    LOGGER.info("Lexing input: \"{}\"", input);
     IToken token;
     do {
       token = nextToken();
@@ -40,74 +35,35 @@ public class Lexer {
     } while (token.type() != TokenType.EOF);
   }
 
-  // TODO split method
   private IToken nextToken() {
     skipWhitespace();
     if (currentPosition >= input.length()) return new Token(TokenType.EOF, currentPosition);
     IToken bestMatch = null;
-    int longestMatchLength = 0;
+    longestMatchLength = 0;
 
     Map<TokenType, Regex> currentDerivatives = new EnumMap<>(regexes);
 
     int lookaheadPosition = currentPosition;
-    String currentMatch = "";
+    StringBuilder currentMatch = new StringBuilder();
 
     while (lookaheadPosition < input.length()) {
       char currentChar = input.charAt(lookaheadPosition);
-      boolean progressMade = false;
-
       Map<TokenType, Regex> nextDerivatives = new EnumMap<>(TokenType.class);
-      for (Map.Entry<TokenType, Regex> entry : currentDerivatives.entrySet()) {
-        TokenType type = entry.getKey();
-        Regex currentRegex = entry.getValue();
-        Regex derivedRegex = currentRegex.derive(currentChar).simplify();
-        if (!derivedRegex.equals(Regex.EMPTY)) {
-          nextDerivatives.put(type, derivedRegex);
-          progressMade = true;
-        }
-      }
-
+      boolean progressMade = createNewRegexes(currentDerivatives, currentChar, nextDerivatives);
       if (!progressMade) break;
       currentDerivatives = nextDerivatives;
-      currentMatch += currentChar;
+      currentMatch.append(currentChar);
       lookaheadPosition++;
 
       for (Map.Entry<TokenType, Regex> entry : currentDerivatives.entrySet()) {
-        TokenType type = entry.getKey();
-        Regex derivedRegex = entry.getValue();
-        if (!derivedRegex.isNullable()) continue;
-        int currentMatchLength = lookaheadPosition - currentPosition;
-        if (currentMatchLength > longestMatchLength) {
-          longestMatchLength = currentMatchLength;
-          bestMatch =
-              switch (type) {
-                case IDENTIFIER -> new TokenIdentifier(type, currentPosition, currentMatch);
-                case CLASS -> new TokenClass(type, currentPosition, Integer.class);
-                case DECIMAL ->
-                    new TokenDecimal(type, currentPosition, Integer.parseInt(currentMatch));
-                case HEXADECIMAL ->
-                    new TokenDecimal(
-                        type, currentPosition, Integer.parseInt(currentMatch.substring(2), 16));
-                default -> new Token(type, currentPosition);
-              };
-        } else if (currentMatchLength == longestMatchLength) {
-          IToken finalBestMatch = bestMatch;
-          if (bestMatch == null
-              || regexes.keySet().stream()
-                      .filter(t -> t == type || t == finalBestMatch.type())
-                      .findFirst()
-                      .orElse(null)
-                  == type) {
-            bestMatch =
-                switch (type) {
-                  case IDENTIFIER -> new TokenIdentifier(type, currentPosition, currentMatch);
-                  case CLASS -> new TokenClass(type, currentPosition, Integer.class);
-                  case DECIMAL, HEXADECIMAL ->
-                      new TokenDecimal(type, currentPosition, Integer.parseInt(currentMatch));
-                  default -> new Token(type, currentPosition);
-                };
-          }
-        }
+        Optional<IToken> optionalBestMatch =
+            handleNullableRegexes(
+                entry.getKey(),
+                entry.getValue(),
+                lookaheadPosition,
+                currentMatch.toString(),
+                bestMatch);
+        if (optionalBestMatch.isPresent()) bestMatch = optionalBestMatch.get();
       }
     }
 
@@ -120,6 +76,55 @@ public class Lexer {
         new TokenError(TokenType.UNKNOWN, currentPosition, input.charAt(currentPosition));
     currentPosition++;
     return errorToken;
+  }
+
+  private boolean createNewRegexes(
+      Map<TokenType, Regex> currentDerivatives,
+      char currentChar,
+      Map<TokenType, Regex> nextDerivatives) {
+    boolean progressMade = false;
+    for (Map.Entry<TokenType, Regex> entry : currentDerivatives.entrySet()) {
+      TokenType type = entry.getKey();
+      Regex currentRegex = entry.getValue();
+      Regex derivedRegex = currentRegex.derive(currentChar).simplify();
+      if (!derivedRegex.equals(Regex.EMPTY)) {
+        nextDerivatives.put(type, derivedRegex);
+        progressMade = true;
+      }
+    }
+
+    return progressMade;
+  }
+
+  private Optional<IToken> handleNullableRegexes(
+      TokenType type, Regex regex, int lookaheadPosition, String currentMatch, IToken bestMatch) {
+    if (!regex.isNullable()) return Optional.empty();
+    int currentMatchLength = lookaheadPosition - currentPosition;
+    if (currentMatchLength > longestMatchLength) {
+      longestMatchLength = currentMatchLength;
+      return Optional.of(determineToken(type, currentPosition, currentMatch));
+    } else if (currentMatchLength == longestMatchLength
+        && (bestMatch == null
+            || regexes.keySet().stream()
+                    .filter(t -> t == type || t == bestMatch.type())
+                    .findFirst()
+                    .orElse(null)
+                == type)) {
+      return Optional.of(determineToken(type, currentPosition, currentMatch));
+    }
+
+    return Optional.empty();
+  }
+
+  private IToken determineToken(TokenType type, int currentPosition, String currentMatch) {
+    return switch (type) {
+      case IDENTIFIER -> new TokenIdentifier(type, currentPosition, currentMatch);
+      case CLASS -> new TokenClass(type, currentPosition, Integer.class);
+      case DECIMAL -> new TokenDecimal(type, currentPosition, Integer.parseInt(currentMatch));
+      case HEXADECIMAL ->
+          new TokenDecimal(type, currentPosition, Integer.parseInt(currentMatch.substring(2), 16));
+      default -> new Token(type, currentPosition);
+    };
   }
 
   // TODO give positions in line and row
