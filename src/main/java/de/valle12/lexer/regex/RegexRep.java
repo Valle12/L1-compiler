@@ -1,15 +1,14 @@
 package de.valle12.lexer.regex;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class RegexRep implements IRegex {
-  private final IRegex regex;
+public class RegexRep extends Regex {
+  private final Regex r;
 
   @Override
-  public IRegex derive(String character) {
-    return new RegexSeq(regex.derive(character), this);
+  public Regex derive(char c) {
+    return Regex.seq(r.derive(c), this);
   }
 
   @Override
@@ -18,11 +17,13 @@ public class RegexRep implements IRegex {
   }
 
   @Override
-  public boolean match(List<Object> input) {
-    return Regex.match(this, input);
+  public Regex simplify() {
+    Regex s = r.simplify();
+    if (s.equals(EMPTY) || s.equals(EPSILON)) return EPSILON;
+    return new RegexRep(s);
   }
 
   public String toString() {
-    return "(" + regex + ")*";
+    return "(" + r + ")*";
   }
 }

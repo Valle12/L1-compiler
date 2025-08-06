@@ -2,7 +2,7 @@ $$
 \begin{align}
     \text{RETURN} &: \text{return} \\
     \text{SEMICOLON} &: \text{;} \\
-    \text{TYPE} &: \text{int} \\
+    \text{CLASS} &: \text{int} \\
     \text{EQUALS} &: \text{=} \\
     \text{LEFT_PARENTHESIS} &: \text{(} \\
     \text{RIGHT_PARENTHESIS} &: \text{)} \\
@@ -21,5 +21,8 @@ $$
     \text{HEXADECIMAL} &: \text{0[xX][A-Fa-f0-9]+} \\
     \text{LEFT_BRACE} &: \text{\{} \\
     \text{RIGHT_BRACE} &: \text{\}} \\
+    \text{SINGLE_LINE_COMMENT} &: \text{//} \\
+    \text{MULTI_LINE_COMMENT_BEGIN} &: \text{/*} \\
+    \text{MULTI_LINE_COMMENT_END} &: \text{*/} \\
 \end{align}
 $$

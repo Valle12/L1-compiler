@@ -1,18 +1,16 @@
 package de.valle12.lexer.regex;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class RegexSeq implements IRegex {
-  private final IRegex first;
-  private final IRegex second;
+public class RegexSeq extends Regex {
+  private final Regex first;
+  private final Regex second;
 
   @Override
-  public IRegex derive(String character) {
-    return new RegexAlt(
-        new RegexSeq(first.derive(character), second),
-        first.isNullable() ? second.derive(character) : new RegexEmpty());
+  public Regex derive(char c) {
+    if (first.isNullable()) return Regex.alt(Regex.seq(first.derive(c), second), second.derive(c));
+    return Regex.seq(first.derive(c), second);
   }
 
   @Override
@@ -21,8 +19,15 @@ public class RegexSeq implements IRegex {
   }
 
   @Override
-  public boolean match(List<Object> input) {
-    return Regex.match(this, input);
+  public Regex simplify() {
+    Regex s1 = first.simplify();
+    Regex s2 = second.simplify();
+
+    if (s1.equals(EMPTY) || s2.equals(EMPTY)) return EMPTY;
+    if (s1.equals(EPSILON)) return s2;
+    if (s2.equals(EPSILON)) return s1;
+
+    return new RegexSeq(s1, s2);
   }
 
   public String toString() {

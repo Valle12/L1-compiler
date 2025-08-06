@@ -1,16 +1,15 @@
 package de.valle12.lexer.regex;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class RegexAlt implements IRegex {
-  private final IRegex left;
-  private final IRegex right;
+public class RegexAlt extends Regex {
+  private final Regex left;
+  private final Regex right;
 
   @Override
-  public IRegex derive(String character) {
-    return new RegexAlt(left.derive(character), right.derive(character));
+  public Regex derive(char c) {
+    return Regex.alt(left.derive(c), right.derive(c));
   }
 
   @Override
@@ -19,11 +18,19 @@ public class RegexAlt implements IRegex {
   }
 
   @Override
-  public boolean match(List<Object> input) {
-    return Regex.match(this, input);
+  public Regex simplify() {
+    Regex s1 = left.simplify();
+    Regex s2 = right.simplify();
+
+    if (s1.equals(EMPTY)) return s2;
+    if (s2.equals(EMPTY)) return s1;
+    if (s1.equals(s2)) return s1;
+
+    if (s1.toString().compareTo(s2.toString()) > 0) return new RegexAlt(s2, s1);
+    return new RegexAlt(s1, s2);
   }
 
   public String toString() {
-    return "(" + left + "|" + right + ")";
+    return "(" + left + " | " + right + ")";
   }
 }

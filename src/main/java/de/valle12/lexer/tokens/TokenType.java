@@ -3,7 +3,7 @@ package de.valle12.lexer.tokens;
 public enum TokenType {
   RETURN,
   SEMICOLON,
-  TYPE,
+  CLASS,
   EQUALS,
   LEFT_PARENTHESIS,
   RIGHT_PARENTHESIS,
@@ -21,5 +21,10 @@ public enum TokenType {
   DECIMAL,
   HEXADECIMAL,
   LEFT_BRACE,
-  RIGHT_BRACE
+  RIGHT_BRACE,
+  UNKNOWN,
+  SINGLE_LINE_COMMENT,
+  MULTI_LINE_COMMENT_BEGIN,
+  MULTI_LINE_COMMENT_END,
+  EOF;
 }

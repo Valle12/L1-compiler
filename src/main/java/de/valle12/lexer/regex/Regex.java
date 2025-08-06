@@ -1,14 +1,40 @@
 package de.valle12.lexer.regex;
 
-import java.util.List;
+public abstract class Regex {
+  public static final Regex EMPTY = new RegexEmpty();
+  public static final Regex EPSILON = new RegexEpsilon();
 
-public class Regex {
-  private Regex() {}
+  public static Regex alt(Regex left, Regex right) {
+    return new RegexAlt(left, right).simplify();
+  }
 
-  public static boolean match(IRegex regex, List<Object> input) {
-    if (input.isEmpty()) return regex.isNullable();
-    String firstChar = input.getFirst().toString();
-    List<Object> rest = input.subList(1, input.size());
-    return match(regex.derive(firstChar), rest);
+  public static Regex seq(Regex first, Regex second) {
+    return new RegexSeq(first, second).simplify();
+  }
+
+  public static Regex rep(Regex r) {
+    return new RegexRep(r).simplify();
+  }
+
+  public static Regex literal(char c) {
+    return new RegexLiteral(c);
+  }
+
+  public static Regex literal(String s) {
+    if (s.isEmpty()) return EPSILON; // TODO maybe new epsilon
+    Regex result = new RegexLiteral(s.charAt(0));
+    for (int i = 1; i < s.length(); i++) {
+      result = seq(result, new RegexLiteral(s.charAt(i)));
+    }
+
+    return result;
+  }
+
+  public abstract Regex derive(char c);
+
+  public abstract boolean isNullable();
+
+  public Regex simplify() {
+    return this;
   }
 }

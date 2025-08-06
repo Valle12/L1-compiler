@@ -1,20 +1,13 @@
 package de.valle12.lexer.regex;
 
-import java.util.List;
-
-public class RegexEmpty implements IRegex {
+public class RegexEmpty extends Regex {
   @Override
-  public IRegex derive(String character) {
+  public Regex derive(char c) {
     return this;
   }
 
   @Override
   public boolean isNullable() {
-    return false;
-  }
-
-  @Override
-  public boolean match(List<Object> input) {
     return false;
   }
 
