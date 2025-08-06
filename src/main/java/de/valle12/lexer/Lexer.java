@@ -1,63 +1,39 @@
 package de.valle12.lexer;
 
 import de.valle12.lexer.regex.Regex;
-import de.valle12.lexer.regex.RegexPatterns;
-import de.valle12.lexer.tokens.Token;
-import de.valle12.lexer.tokens.TokenType;
+import de.valle12.lexer.tokens.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Lexer {
   private final String input;
-  private final Map<TokenType, Regex> regexes = new LinkedHashMap<>();
+  private final Map<TokenType, Regex> regexes =
+      Arrays.stream(TokenType.values())
+          .collect(
+              Collectors.toMap(
+                  Function.identity(),
+                  TokenType::getR,
+                  (oldValue, newValue) -> oldValue,
+                  () -> new EnumMap<>(TokenType.class)));
   private int currentPosition = 0;
 
   @SneakyThrows
   public Lexer() {
     this.input =
         Files.readString(Path.of(getClass().getClassLoader().getResource("test.l1").toURI()));
-    this.currentPosition = 0;
-    initializeRegexes();
-  }
-
-  // TODO embed those into the tokentype itself
-  private void initializeRegexes() {
-    regexes.put(TokenType.RETURN, Regex.literal("return"));
-    regexes.put(TokenType.SEMICOLON, Regex.literal(';'));
-    regexes.put(TokenType.CLASS, Regex.literal("int"));
-    regexes.put(TokenType.EQUALS, Regex.literal('='));
-    regexes.put(TokenType.LEFT_PARENTHESIS, Regex.literal('('));
-    regexes.put(TokenType.RIGHT_PARENTHESIS, Regex.literal(')'));
-    regexes.put(TokenType.PLUS, Regex.literal('+'));
-    regexes.put(TokenType.MINUS, Regex.literal('-'));
-    regexes.put(TokenType.STAR, Regex.literal('*'));
-    regexes.put(TokenType.SLASH, Regex.literal('/'));
-    regexes.put(TokenType.PERCENT, Regex.literal('%'));
-    regexes.put(TokenType.PLUS_EQUALS, Regex.literal("+="));
-    regexes.put(TokenType.MINUS_EQUALS, Regex.literal("-="));
-    regexes.put(TokenType.STAR_EQUALS, Regex.literal("*="));
-    regexes.put(TokenType.SLASH_EQUALS, Regex.literal("/="));
-    regexes.put(TokenType.PERCENT_EQUALS, Regex.literal("%="));
-    regexes.put(TokenType.IDENTIFIER, RegexPatterns.IDENTIFIER_REGEX);
-    regexes.put(TokenType.DECIMAL, RegexPatterns.DECIMAL_REGEX);
-    // TODO skip for now regexes.put(TokenType.HEXADECIMAL, )
-    regexes.put(TokenType.LEFT_BRACE, Regex.literal('{'));
-    regexes.put(TokenType.RIGHT_BRACE, Regex.literal('}'));
-    regexes.put(TokenType.SINGLE_LINE_COMMENT, Regex.literal("//"));
-    regexes.put(TokenType.MULTI_LINE_COMMENT_BEGIN, Regex.literal("/*"));
-    regexes.put(TokenType.MULTI_LINE_COMMENT_END, Regex.literal("*/"));
   }
 
   public void start() {
     LOGGER.info("Lexing input: \"{}\"", input);
-    Token token;
+    IToken token;
     do {
       token = nextToken();
       LOGGER.info(token.toString());
@@ -65,10 +41,10 @@ public class Lexer {
   }
 
   // TODO split method
-  private Token nextToken() {
+  private IToken nextToken() {
     skipWhitespace();
-    if (currentPosition >= input.length()) return new Token(TokenType.EOF, "", currentPosition);
-    Token bestMatch = null;
+    if (currentPosition >= input.length()) return new Token(TokenType.EOF, currentPosition);
+    IToken bestMatch = null;
     int longestMatchLength = 0;
 
     Map<TokenType, Regex> currentDerivatives = new EnumMap<>(regexes);
@@ -80,7 +56,7 @@ public class Lexer {
       char currentChar = input.charAt(lookaheadPosition);
       boolean progressMade = false;
 
-      Map<TokenType, Regex> nextDerivatives = new HashMap<>();
+      Map<TokenType, Regex> nextDerivatives = new EnumMap<>(TokenType.class);
       for (Map.Entry<TokenType, Regex> entry : currentDerivatives.entrySet()) {
         TokenType type = entry.getKey();
         Regex currentRegex = entry.getValue();
@@ -103,16 +79,33 @@ public class Lexer {
         int currentMatchLength = lookaheadPosition - currentPosition;
         if (currentMatchLength > longestMatchLength) {
           longestMatchLength = currentMatchLength;
-          bestMatch = new Token(type, currentMatch, currentPosition);
+          bestMatch =
+              switch (type) {
+                case IDENTIFIER -> new TokenIdentifier(type, currentPosition, currentMatch);
+                case CLASS -> new TokenClass(type, currentPosition, Integer.class);
+                case DECIMAL ->
+                    new TokenDecimal(type, currentPosition, Integer.parseInt(currentMatch));
+                case HEXADECIMAL ->
+                    new TokenDecimal(
+                        type, currentPosition, Integer.parseInt(currentMatch.substring(2), 16));
+                default -> new Token(type, currentPosition);
+              };
         } else if (currentMatchLength == longestMatchLength) {
-          Token finalBestMatch = bestMatch;
+          IToken finalBestMatch = bestMatch;
           if (bestMatch == null
               || regexes.keySet().stream()
                       .filter(t -> t == type || t == finalBestMatch.type())
                       .findFirst()
                       .orElse(null)
                   == type) {
-            bestMatch = new Token(type, currentMatch, currentPosition);
+            bestMatch =
+                switch (type) {
+                  case IDENTIFIER -> new TokenIdentifier(type, currentPosition, currentMatch);
+                  case CLASS -> new TokenClass(type, currentPosition, Integer.class);
+                  case DECIMAL, HEXADECIMAL ->
+                      new TokenDecimal(type, currentPosition, Integer.parseInt(currentMatch));
+                  default -> new Token(type, currentPosition);
+                };
           }
         }
       }
@@ -123,8 +116,8 @@ public class Lexer {
       return bestMatch;
     }
 
-    String errorChar = String.valueOf(input.charAt(currentPosition));
-    Token errorToken = new Token(TokenType.UNKNOWN, errorChar, currentPosition);
+    IToken errorToken =
+        new TokenError(TokenType.UNKNOWN, currentPosition, input.charAt(currentPosition));
     currentPosition++;
     return errorToken;
   }
