@@ -1,5 +1,6 @@
 package de.valle12.lexer.regex;
 
+@SuppressWarnings({"java:S2390", "StaticInitializerReferencesSubClass"})
 public abstract class Regex {
   public static final Regex EMPTY = new RegexEmpty();
   public static final Regex EPSILON = new RegexEpsilon();
@@ -21,7 +22,7 @@ public abstract class Regex {
   }
 
   public static Regex literal(String s) {
-    if (s.isEmpty()) return EPSILON; // TODO maybe new epsilon
+    if (s.isEmpty()) return EPSILON;
     Regex result = new RegexLiteral(s.charAt(0));
     for (int i = 1; i < s.length(); i++) {
       result = seq(result, new RegexLiteral(s.charAt(i)));

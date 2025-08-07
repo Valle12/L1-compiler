@@ -1,6 +1,8 @@
 int main() {
     int a = -5;
-    int b = 0xA;
-    int c = a + b;
+    int b = 0xA; /*
+    WHAZZUPP
+
+   */ int c = a + b;
     return c; // This should return 5
 }

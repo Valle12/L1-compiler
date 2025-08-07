@@ -2,18 +2,18 @@ package de.valle12.lexer;
 
 import de.valle12.lexer.regex.Regex;
 import de.valle12.lexer.tokens.*;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
-// TODO add support for comments and line numbers
+@Getter
+@Setter
 public class Lexer {
   private final String input;
   private final Map<TokenType, Regex> regexes =
@@ -24,20 +24,26 @@ public class Lexer {
                   TokenType::getR,
                   (oldValue, newValue) -> oldValue,
                   () -> new EnumMap<>(TokenType.class)));
+  private int tokenLine = 1;
+  private int tokenPosition = 1;
   private int currentPosition = 0;
   private int longestMatchLength = 0;
 
-  public void start() {
+  public List<IToken> start() {
+    List<IToken> tokens = new ArrayList<>();
     IToken token;
     do {
       token = nextToken();
-      LOGGER.info(token.toString());
+      tokens.add(token);
     } while (token.type() != TokenType.EOF);
+
+    return tokens;
   }
 
-  private IToken nextToken() {
+  IToken nextToken() {
     skipWhitespace();
-    if (currentPosition >= input.length()) return new Token(TokenType.EOF, currentPosition);
+    if (currentPosition >= input.length())
+      return new Token(TokenType.EOF, new Position(tokenLine, tokenPosition));
     IToken bestMatch = null;
     longestMatchLength = 0;
 
@@ -69,16 +75,21 @@ public class Lexer {
 
     if (bestMatch != null) {
       currentPosition += longestMatchLength;
+      tokenPosition += longestMatchLength;
       return bestMatch;
     }
 
     IToken errorToken =
-        new TokenError(TokenType.UNKNOWN, currentPosition, input.charAt(currentPosition));
+        new TokenError(
+            TokenType.UNKNOWN,
+            new Position(tokenLine, tokenPosition),
+            input.charAt(currentPosition));
     currentPosition++;
+    tokenPosition++;
     return errorToken;
   }
 
-  private boolean createNewRegexes(
+  boolean createNewRegexes(
       Map<TokenType, Regex> currentDerivatives,
       char currentChar,
       Map<TokenType, Regex> nextDerivatives) {
@@ -96,13 +107,13 @@ public class Lexer {
     return progressMade;
   }
 
-  private Optional<IToken> handleNullableRegexes(
+  Optional<IToken> handleNullableRegexes(
       TokenType type, Regex regex, int lookaheadPosition, String currentMatch, IToken bestMatch) {
     if (!regex.isNullable()) return Optional.empty();
     int currentMatchLength = lookaheadPosition - currentPosition;
     if (currentMatchLength > longestMatchLength) {
       longestMatchLength = currentMatchLength;
-      return Optional.of(determineToken(type, currentPosition, currentMatch));
+      return Optional.of(determineToken(type, currentMatch));
     } else if (currentMatchLength == longestMatchLength
         && (bestMatch == null
             || regexes.keySet().stream()
@@ -110,28 +121,106 @@ public class Lexer {
                     .findFirst()
                     .orElse(null)
                 == type)) {
-      return Optional.of(determineToken(type, currentPosition, currentMatch));
+      return Optional.of(determineToken(type, currentMatch));
     }
 
     return Optional.empty();
   }
 
-  private IToken determineToken(TokenType type, int currentPosition, String currentMatch) {
+  IToken determineToken(TokenType type, String currentMatch) {
     return switch (type) {
-      case IDENTIFIER -> new TokenIdentifier(type, currentPosition, currentMatch);
-      case CLASS -> new TokenClass(type, currentPosition, Integer.class);
-      case DECIMAL -> new TokenDecimal(type, currentPosition, Integer.parseInt(currentMatch));
+      case IDENTIFIER ->
+          new TokenIdentifier(type, new Position(tokenLine, tokenPosition), currentMatch);
+      case CLASS -> new TokenClass(type, new Position(tokenLine, tokenPosition), Integer.class);
+      case DECIMAL ->
+          new TokenDecimal(
+              type, new Position(tokenLine, tokenPosition), Integer.parseInt(currentMatch));
       case HEXADECIMAL ->
-          new TokenDecimal(type, currentPosition, Integer.parseInt(currentMatch.substring(2), 16));
-      default -> new Token(type, currentPosition);
+          new TokenDecimal(
+              type,
+              new Position(tokenLine, tokenPosition),
+              Integer.parseInt(currentMatch.substring(2), 16));
+      case SINGLE_LINE_COMMENT -> {
+        int currentTokenLine = tokenLine;
+        int currentTokenPosition = tokenPosition;
+        skipLine();
+        yield new Token(type, new Position(currentTokenLine, currentTokenPosition));
+      }
+      case MULTI_LINE_COMMENT_BEGIN -> {
+        int currentTokenLine = tokenLine;
+        int currentTokenPosition = tokenPosition;
+        skipLines();
+        yield new Token(type, new Position(currentTokenLine, currentTokenPosition));
+      }
+      default -> new Token(type, new Position(tokenLine, tokenPosition));
     };
   }
 
-  // TODO give positions in line and row
-  private void skipWhitespace() {
+  void skipWhitespace() {
+    int lineEndCharacters = 0;
     while (currentPosition < input.length()
         && Character.isWhitespace(input.charAt(currentPosition))) {
+      if (input.charAt(currentPosition) == '\n' || input.charAt(currentPosition) == '\r') {
+        if (lineEndCharacters == 0) tokenPosition = 1;
+        lineEndCharacters++;
+      }
+
       currentPosition++;
+      tokenPosition++;
     }
+
+    if (lineEndCharacters > 0) {
+      tokenLine++;
+      tokenPosition -= lineEndCharacters;
+    }
+  }
+
+  // TODO definitely test for only \n, only \r and \r\n
+  void skipLine() {
+    while (currentPosition < input.length()
+        && input.charAt(currentPosition) != '\n'
+        && input.charAt(currentPosition) != '\r') {
+      currentPosition++;
+      tokenPosition++;
+    }
+
+    currentPosition++;
+    tokenPosition++;
+
+    if (currentPosition < input.length()
+        && (input.charAt(currentPosition) == '\n' || input.charAt(currentPosition) == '\r')) {
+      currentPosition++;
+      tokenPosition++;
+    }
+
+    tokenLine++;
+    currentPosition -= longestMatchLength;
+    tokenPosition = 1 - longestMatchLength;
+  }
+
+  void skipLines() {
+    while ((currentPosition + 1) < input.length()
+        && (input.charAt(currentPosition) != '*' || input.charAt(currentPosition + 1) != '/')) {
+      char current = input.charAt(currentPosition);
+      char next = input.charAt(currentPosition + 1);
+
+      if (current == '\r') {
+        if (next == '\n') {
+          currentPosition++;
+          tokenPosition++;
+        }
+        tokenLine++;
+        tokenPosition = 1 - longestMatchLength;
+      } else if (current == '\n') {
+        tokenLine++;
+        tokenPosition = 1 - longestMatchLength;
+      }
+
+      currentPosition++;
+      tokenPosition++;
+    }
+
+    currentPosition -= longestMatchLength;
+    tokenPosition--; // Maybe look at better way of counting positions
   }
 }

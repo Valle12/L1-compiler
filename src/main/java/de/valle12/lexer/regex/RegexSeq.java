@@ -1,8 +1,10 @@
 package de.valle12.lexer.regex;
 
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 public class RegexSeq extends Regex {
   private final Regex first;
   private final Regex second;

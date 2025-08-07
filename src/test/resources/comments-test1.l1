@@ -1,0 +1,11 @@
+int main() {
+    int a = 5; // Single line comment test with int b = 10;
+    int b = 10; /* Multi line comment on one line */ int c = 15;
+  /*
+    int d = 20; // Single line comment inside multi-line comment
+    int e = c + d;
+    int f*/int f = a * b + c;
+    int g = f - 50 / 2;
+    // Final calculation
+    return g % 3;
+}

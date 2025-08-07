@@ -1,8 +1,10 @@
 package de.valle12.lexer.regex;
 
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 public class RegexLiteral extends Regex {
   private final char character;
 
@@ -17,6 +19,6 @@ public class RegexLiteral extends Regex {
   }
 
   public String toString() {
-    return "'" + character + "'";
+    return String.valueOf(character);
   }
 }

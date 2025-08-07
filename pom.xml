@@ -21,6 +21,10 @@
 
         <!-- Jackson -->
         <jackson.version>2.19.1</jackson.version>
+
+        <!-- JUnit -->
+        <junit.version>5.13.4</junit.version>
+        <approvaltests.version>25.0.23</approvaltests.version>
     </properties>
 
     <dependencies>
@@ -52,6 +56,25 @@
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- JUnit -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.approvaltests</groupId>
+            <artifactId>approvaltests</artifactId>
+            <version>${approvaltests.version}</version>
         </dependency>
     </dependencies>
 </project>

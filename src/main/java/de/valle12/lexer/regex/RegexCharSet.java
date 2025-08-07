@@ -1,9 +1,11 @@
 package de.valle12.lexer.regex;
 
 import java.util.function.Predicate;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 public class RegexCharSet extends Regex {
   private final Predicate<Character> charPredicate;
   private final String description;
