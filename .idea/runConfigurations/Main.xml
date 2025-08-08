@@ -2,7 +2,7 @@
   <configuration default="false" name="Main" type="Application" factoryName="Application" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="de.valle12.Main" />
     <module name="L1-compiler" />
-    <option name="PROGRAM_PARAMETERS" value="src/main/resources/test.l1" />
+    <option name="PROGRAM_PARAMETERS" value="src/test/resources/comments-test1.l1" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="de.valle12.*" />

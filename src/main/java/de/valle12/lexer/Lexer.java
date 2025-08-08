@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 @Setter
 public class Lexer {
+  private static final int STANDARD_TOKEN_POSITION = 1;
+  private static final int STANDARD_LONGEST_MATCH_LENGTH = 0;
   private final String input;
   private final Map<TokenType, Regex> regexes =
       Arrays.stream(TokenType.values())
@@ -25,9 +27,9 @@ public class Lexer {
                   (oldValue, newValue) -> oldValue,
                   () -> new EnumMap<>(TokenType.class)));
   private int tokenLine = 1;
-  private int tokenPosition = 1;
+  private int tokenPosition = STANDARD_TOKEN_POSITION;
   private int currentPosition = 0;
-  private int longestMatchLength = 0;
+  private int longestMatchLength = STANDARD_LONGEST_MATCH_LENGTH;
 
   public List<IToken> start() {
     List<IToken> tokens = new ArrayList<>();
@@ -45,7 +47,7 @@ public class Lexer {
     if (currentPosition >= input.length())
       return new Token(TokenType.EOF, new Position(tokenLine, tokenPosition));
     IToken bestMatch = null;
-    longestMatchLength = 0;
+    longestMatchLength = STANDARD_LONGEST_MATCH_LENGTH;
 
     Map<TokenType, Regex> currentDerivatives = new EnumMap<>(regexes);
 
@@ -74,8 +76,12 @@ public class Lexer {
     }
 
     if (bestMatch != null) {
-      currentPosition += longestMatchLength;
-      tokenPosition += longestMatchLength;
+      if (bestMatch.type() != TokenType.SINGLE_LINE_COMMENT
+          && bestMatch.type() != TokenType.MULTI_LINE_COMMENT_BEGIN) {
+        currentPosition += longestMatchLength;
+        tokenPosition += longestMatchLength;
+      }
+
       return bestMatch;
     }
 
@@ -157,70 +163,67 @@ public class Lexer {
   }
 
   void skipWhitespace() {
-    int lineEndCharacters = 0;
+    char currentChar;
     while (currentPosition < input.length()
-        && Character.isWhitespace(input.charAt(currentPosition))) {
-      if (input.charAt(currentPosition) == '\n' || input.charAt(currentPosition) == '\r') {
-        if (lineEndCharacters == 0) tokenPosition = 1;
-        lineEndCharacters++;
+        && Character.isWhitespace(currentChar = input.charAt(currentPosition))) {
+      if (currentChar == '\r') {
+        if (currentPosition + 1 < input.length() && input.charAt(currentPosition + 1) == '\n') {
+          currentPosition++;
+        }
+
+        tokenLine++;
+        tokenPosition = STANDARD_TOKEN_POSITION;
+      } else if (currentChar == '\n') {
+        tokenLine++;
+        tokenPosition = STANDARD_TOKEN_POSITION;
+      } else {
+        tokenPosition++;
       }
 
       currentPosition++;
-      tokenPosition++;
-    }
-
-    if (lineEndCharacters > 0) {
-      tokenLine++;
-      tokenPosition -= lineEndCharacters;
     }
   }
 
-  // TODO definitely test for only \n, only \r and \r\n
   void skipLine() {
+    char currentChar = '0';
     while (currentPosition < input.length()
-        && input.charAt(currentPosition) != '\n'
-        && input.charAt(currentPosition) != '\r') {
+        && (currentChar = input.charAt(currentPosition)) != '\n'
+        && currentChar != '\r') {
       currentPosition++;
-      tokenPosition++;
+    }
+
+    if (currentChar == '\r') {
+      if (currentPosition + 1 < input.length() && input.charAt(currentPosition + 1) == '\n') {
+        currentPosition++;
+      }
+
+      tokenLine++;
+      tokenPosition = STANDARD_TOKEN_POSITION;
+    } else if (currentChar == '\n') {
+      tokenLine++;
+      tokenPosition = STANDARD_TOKEN_POSITION;
     }
 
     currentPosition++;
-    tokenPosition++;
-
-    if (currentPosition < input.length()
-        && (input.charAt(currentPosition) == '\n' || input.charAt(currentPosition) == '\r')) {
-      currentPosition++;
-      tokenPosition++;
-    }
-
-    tokenLine++;
-    currentPosition -= longestMatchLength;
-    tokenPosition = 1 - longestMatchLength;
   }
 
   void skipLines() {
-    while ((currentPosition + 1) < input.length()
+    while (currentPosition + 1 < input.length()
         && (input.charAt(currentPosition) != '*' || input.charAt(currentPosition + 1) != '/')) {
       char current = input.charAt(currentPosition);
       char next = input.charAt(currentPosition + 1);
-
       if (current == '\r') {
-        if (next == '\n') {
-          currentPosition++;
-          tokenPosition++;
-        }
+        if (next == '\n') currentPosition++;
         tokenLine++;
-        tokenPosition = 1 - longestMatchLength;
+        tokenPosition = STANDARD_TOKEN_POSITION;
       } else if (current == '\n') {
         tokenLine++;
-        tokenPosition = 1 - longestMatchLength;
+        tokenPosition = STANDARD_TOKEN_POSITION;
+      } else {
+        tokenPosition++;
       }
 
       currentPosition++;
-      tokenPosition++;
     }
-
-    currentPosition -= longestMatchLength;
-    tokenPosition--; // Maybe look at better way of counting positions
   }
 }
