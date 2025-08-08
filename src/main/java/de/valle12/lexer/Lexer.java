@@ -60,10 +60,7 @@ public class Lexer {
       currentMatch.append(currentChar);
       lookaheadPosition++;
       Optional<IToken> optionalBestMatch =
-          handleNullableRegex(
-              currentDerivatives,
-              currentMatch.toString(),
-              bestMatch == null ? null : bestMatch.type());
+          handleNullableRegex(currentDerivatives, currentMatch.toString());
       if (optionalBestMatch.isPresent()) bestMatch = optionalBestMatch.get();
     }
 
@@ -102,7 +99,7 @@ public class Lexer {
   }
 
   Optional<IToken> handleNullableRegex(
-      Map<TokenType, Regex> currentDerivatives, String currentMatch, TokenType bestMatchType) {
+      Map<TokenType, Regex> currentDerivatives, String currentMatch) {
     IToken bestMatch = null;
 
     for (Map.Entry<TokenType, Regex> entry : currentDerivatives.entrySet()) {
@@ -113,18 +110,21 @@ public class Lexer {
       if (currentMatchLength > longestMatchLength) {
         longestMatchLength = currentMatchLength;
         bestMatch = determineToken(type, currentMatch);
-      } else if (currentMatchLength == longestMatchLength
-          && (bestMatchType == null
-              || regexes.keySet().stream()
-                      .filter(t -> ((t == type) || (t == bestMatchType)))
-                      .findFirst()
-                      .orElse(null)
-                  == type)) {
-        bestMatch = determineToken(type, currentMatch);
+      } else {
+        IToken finalBestMatch = bestMatch;
+        if (currentMatchLength == longestMatchLength
+            && (bestMatch == null
+                || regexes.keySet().stream()
+                        .filter(t -> ((t == type) || (t == finalBestMatch.type())))
+                        .findFirst()
+                        .orElse(null)
+                    == type)) {
+          bestMatch = determineToken(type, currentMatch);
+        }
       }
     }
 
-    return bestMatch == null ? Optional.empty() : Optional.of(bestMatch);
+    return Optional.ofNullable(bestMatch);
   }
 
   IToken determineToken(TokenType type, String currentMatch) {

@@ -307,7 +307,7 @@ class LexerTest {
     Lexer lexer = new Lexer("");
     Map<TokenType, Regex> map = Map.of(TokenType.IDENTIFIER, Regex.EMPTY);
 
-    Optional<IToken> optional = lexer.handleNullableRegex(map, "", null);
+    Optional<IToken> optional = lexer.handleNullableRegex(map, "");
 
     assertTrue(optional.isEmpty());
   }
@@ -321,7 +321,7 @@ class LexerTest {
     lexer.setLongestMatchLength(2);
     Map<TokenType, Regex> map = Map.of(TokenType.IDENTIFIER, Regex.EPSILON);
 
-    Optional<IToken> optional = lexer.handleNullableRegex(map, "test", null);
+    Optional<IToken> optional = lexer.handleNullableRegex(map, "test");
 
     assertEquals(4, lexer.getLongestMatchLength());
     IToken token = optional.orElseThrow();
@@ -331,46 +331,14 @@ class LexerTest {
 
   @Test
   @DisplayName(
-      "Test handleNullableRegex method with nullable regex, that is equally long as the longest match with no bestMatch")
+      "Test handleNullableRegex method with nullable regex, that is equally long as the longest match")
   void test18() {
     Lexer lexer = new Lexer("");
     lexer.setCurrentPosition(1);
     lexer.setLongestMatchLength(4);
     Map<TokenType, Regex> map = Map.of(TokenType.IDENTIFIER, Regex.EPSILON);
 
-    Optional<IToken> optional = lexer.handleNullableRegex(map, "test", null);
-
-    assertEquals(4, lexer.getLongestMatchLength());
-    IToken token = optional.orElseThrow();
-    assertInstanceOf(TokenIdentifier.class, token);
-    assertEquals("test", ((TokenIdentifier) token).identifier());
-  }
-
-  @Test
-  @DisplayName(
-      "Test handleNullableRegex method with nullable regex, that is equally long as the longest match with bestMatch before IDENTIFIER")
-  void test19() {
-    Lexer lexer = new Lexer("");
-    lexer.setCurrentPosition(1);
-    lexer.setLongestMatchLength(4);
-    Map<TokenType, Regex> map = Map.of(TokenType.IDENTIFIER, Regex.EPSILON);
-
-    Optional<IToken> optional = lexer.handleNullableRegex(map, "test", TokenType.RETURN);
-
-    assertEquals(4, lexer.getLongestMatchLength());
-    assertTrue(optional.isEmpty());
-  }
-
-  @Test
-  @DisplayName(
-      "Test handleNullableRegex method with nullable regex, that is equally long as the longest match with bestMatch after IDENTIFIER")
-  void test20() {
-    Lexer lexer = new Lexer("");
-    lexer.setCurrentPosition(1);
-    lexer.setLongestMatchLength(4);
-    Map<TokenType, Regex> map = Map.of(TokenType.IDENTIFIER, Regex.EPSILON);
-
-    Optional<IToken> optional = lexer.handleNullableRegex(map, "test", TokenType.DECIMAL);
+    Optional<IToken> optional = lexer.handleNullableRegex(map, "test");
 
     assertEquals(4, lexer.getLongestMatchLength());
     IToken token = optional.orElseThrow();

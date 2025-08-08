@@ -21,5 +21,6 @@ public class Main {
     String content = Files.readString(Path.of(args[0]));
     Lexer lexer = new Lexer(content);
     List<IToken> tokens = lexer.start();
+    LOGGER.info("Extracted {} tokens.", tokens.size());
   }
 }
