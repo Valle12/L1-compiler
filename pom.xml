@@ -25,6 +25,7 @@
         <!-- JUnit -->
         <junit.version>5.13.4</junit.version>
         <approvaltests.version>25.0.23</approvaltests.version>
+        <mockito.version>5.18.0</mockito.version>
     </properties>
 
     <dependencies>
@@ -75,6 +76,12 @@
             <groupId>com.approvaltests</groupId>
             <artifactId>approvaltests</artifactId>
             <version>${approvaltests.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

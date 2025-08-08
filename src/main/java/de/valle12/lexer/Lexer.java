@@ -48,31 +48,23 @@ public class Lexer {
       return new Token(TokenType.EOF, new Position(tokenLine, tokenPosition));
     IToken bestMatch = null;
     longestMatchLength = STANDARD_LONGEST_MATCH_LENGTH;
-
     Map<TokenType, Regex> currentDerivatives = new EnumMap<>(regexes);
-
     int lookaheadPosition = currentPosition;
     StringBuilder currentMatch = new StringBuilder();
 
     while (lookaheadPosition < input.length()) {
       char currentChar = input.charAt(lookaheadPosition);
-      Map<TokenType, Regex> nextDerivatives = new EnumMap<>(TokenType.class);
-      boolean progressMade = createNewRegexes(currentDerivatives, currentChar, nextDerivatives);
-      if (!progressMade) break;
+      Map<TokenType, Regex> nextDerivatives = deriveRegexes(currentDerivatives, currentChar);
+      if (nextDerivatives.isEmpty()) break;
       currentDerivatives = nextDerivatives;
       currentMatch.append(currentChar);
       lookaheadPosition++;
-
-      for (Map.Entry<TokenType, Regex> entry : currentDerivatives.entrySet()) {
-        Optional<IToken> optionalBestMatch =
-            handleNullableRegexes(
-                entry.getKey(),
-                entry.getValue(),
-                lookaheadPosition,
-                currentMatch.toString(),
-                bestMatch);
-        if (optionalBestMatch.isPresent()) bestMatch = optionalBestMatch.get();
-      }
+      Optional<IToken> optionalBestMatch =
+          handleNullableRegex(
+              currentDerivatives,
+              currentMatch.toString(),
+              bestMatch == null ? null : bestMatch.type());
+      if (optionalBestMatch.isPresent()) bestMatch = optionalBestMatch.get();
     }
 
     if (bestMatch != null) {
@@ -95,42 +87,44 @@ public class Lexer {
     return errorToken;
   }
 
-  boolean createNewRegexes(
-      Map<TokenType, Regex> currentDerivatives,
-      char currentChar,
-      Map<TokenType, Regex> nextDerivatives) {
-    boolean progressMade = false;
+  Map<TokenType, Regex> deriveRegexes(Map<TokenType, Regex> currentDerivatives, char currentChar) {
+    Map<TokenType, Regex> nextDerivatives = new EnumMap<>(TokenType.class);
+
     for (Map.Entry<TokenType, Regex> entry : currentDerivatives.entrySet()) {
       TokenType type = entry.getKey();
-      Regex currentRegex = entry.getValue();
-      Regex derivedRegex = currentRegex.derive(currentChar).simplify();
-      if (!derivedRegex.equals(Regex.EMPTY)) {
-        nextDerivatives.put(type, derivedRegex);
-        progressMade = true;
+      Regex regex = entry.getValue();
+      Regex derivedRegex = regex.derive(currentChar).simplify();
+      if (derivedRegex.equals(Regex.EMPTY)) continue;
+      nextDerivatives.put(type, derivedRegex);
+    }
+
+    return nextDerivatives;
+  }
+
+  Optional<IToken> handleNullableRegex(
+      Map<TokenType, Regex> currentDerivatives, String currentMatch, TokenType bestMatchType) {
+    IToken bestMatch = null;
+
+    for (Map.Entry<TokenType, Regex> entry : currentDerivatives.entrySet()) {
+      TokenType type = entry.getKey();
+      Regex regex = entry.getValue();
+      if (!regex.isNullable()) continue;
+      int currentMatchLength = currentMatch.length();
+      if (currentMatchLength > longestMatchLength) {
+        longestMatchLength = currentMatchLength;
+        bestMatch = determineToken(type, currentMatch);
+      } else if (currentMatchLength == longestMatchLength
+          && (bestMatchType == null
+              || regexes.keySet().stream()
+                      .filter(t -> ((t == type) || (t == bestMatchType)))
+                      .findFirst()
+                      .orElse(null)
+                  == type)) {
+        bestMatch = determineToken(type, currentMatch);
       }
     }
 
-    return progressMade;
-  }
-
-  Optional<IToken> handleNullableRegexes(
-      TokenType type, Regex regex, int lookaheadPosition, String currentMatch, IToken bestMatch) {
-    if (!regex.isNullable()) return Optional.empty();
-    int currentMatchLength = lookaheadPosition - currentPosition;
-    if (currentMatchLength > longestMatchLength) {
-      longestMatchLength = currentMatchLength;
-      return Optional.of(determineToken(type, currentMatch));
-    } else if (currentMatchLength == longestMatchLength
-        && (bestMatch == null
-            || regexes.keySet().stream()
-                    .filter(t -> t == type || t == bestMatch.type())
-                    .findFirst()
-                    .orElse(null)
-                == type)) {
-      return Optional.of(determineToken(type, currentMatch));
-    }
-
-    return Optional.empty();
+    return bestMatch == null ? Optional.empty() : Optional.of(bestMatch);
   }
 
   IToken determineToken(TokenType type, String currentMatch) {
