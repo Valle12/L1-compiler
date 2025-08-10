@@ -2,6 +2,12 @@
   <dictionary name="project">
     <words>
       <w>appenders</w>
+      <w>asnop</w>
+      <w>binop</w>
+      <w>decnum</w>
+      <w>hexnum</w>
+      <w>intconst</w>
+      <w>unop</w>
     </words>
   </dictionary>
 </component>

@@ -1,0 +1,13 @@
+PROGRAM -> class main left_parenthesis right_parenthesis left_brace STMTS right_brace
+STMTS -> ε | STMT STMTS
+STMT -> DECL semicolon | SIMP semicolon | return EXP semicolon
+DECL -> class identifier DECL2
+SIMP -> LVALUE ASNOP EXP
+LVALUE -> identifier | left_parenthesis LVALUE right_parenthesis
+EXP -> left_parenthesis EXP right_parenthesis EXP2 | INTCONST EXP2 | identifier EXP2 | UNOP EXP EXP2
+INTCONST -> decimal | hexadecimal
+UNOP -> minus
+ASNOP -> equals | plus_equals | minus_equals | star_equals | slash_equals | percent_equals
+EXP2 -> BINOP EXP EXP2 | ε
+BINOP -> plus | minus | star | slash | percent
+DECL2 -> ε | equals EXP semicolon

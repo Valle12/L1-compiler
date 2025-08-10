@@ -3,6 +3,7 @@ package de.valle12;
 import de.valle12.lexer.Lexer;
 import de.valle12.lexer.regex.*;
 import de.valle12.lexer.tokens.IToken;
+import de.valle12.parser.grammar.Analyzer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,5 +23,9 @@ public class Main {
     Lexer lexer = new Lexer(content);
     List<IToken> tokens = lexer.start();
     LOGGER.info("Extracted {} tokens.", tokens.size());
+
+    LOGGER.info("Calculate first and follow sets...");
+    List<String> productions = Files.readAllLines(Path.of("src/main/resources/LL1.txt"));
+    Analyzer analyzer = new Analyzer(productions);
   }
 }

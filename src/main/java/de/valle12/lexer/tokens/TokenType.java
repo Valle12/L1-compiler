@@ -22,6 +22,7 @@ public enum TokenType {
   STAR_EQUALS(Regex.literal("*=")),
   SLASH_EQUALS(Regex.literal("/=")),
   PERCENT_EQUALS(Regex.literal("%=")),
+  MAIN(Regex.literal("main")),
   IDENTIFIER(RegexPatterns.IDENTIFIER_REGEX),
   DECIMAL(RegexPatterns.DECIMAL_REGEX),
   HEXADECIMAL(RegexPatterns.HEXADECIMAL_REGEX),
@@ -31,6 +32,7 @@ public enum TokenType {
   SINGLE_LINE_COMMENT(Regex.literal("//")),
   MULTI_LINE_COMMENT_BEGIN(Regex.literal("/*")),
   MULTI_LINE_COMMENT_END(Regex.literal("*/")),
+  EPSILON(Regex.EPSILON),
   EOF(Regex.EMPTY);
 
   private final Regex r;
