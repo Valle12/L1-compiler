@@ -26,8 +26,9 @@ class AnalyzerTest {
   @Test
   @DisplayName("Test createFirstSets method with various NonTerminals")
   void test1() {
-    Map<NonTerminal, Set<TokenType>> firstSets = analyzer.createFirstSets();
+    analyzer.createFirstSets();
 
+    Map<NonTerminal, Set<TokenType>> firstSets = analyzer.getFirstSets();
     assertEquals(Set.of(TokenType.CLASS), firstSets.get(NonTerminal.PROGRAM));
     assertEquals(
         Set.of(
@@ -59,10 +60,11 @@ class AnalyzerTest {
   @Test
   @DisplayName("Test createFollowSets method with various NonTerminals")
   void test2() {
-    Map<NonTerminal, Set<TokenType>> firstSets = analyzer.createFirstSets();
+    analyzer.createFirstSets();
 
-    Map<NonTerminal, Set<TokenType>> followSets = analyzer.createFollowSets(firstSets);
+    analyzer.createFollowSets();
 
+    Map<NonTerminal, Set<TokenType>> followSets = analyzer.getFollowSets();
     assertEquals(Set.of(TokenType.EOF), followSets.get(NonTerminal.PROGRAM));
     assertEquals(
         Set.of(

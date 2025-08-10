@@ -27,5 +27,8 @@ public class Main {
     LOGGER.info("Calculate first and follow sets...");
     List<String> productions = Files.readAllLines(Path.of("src/main/resources/LL1.txt"));
     Analyzer analyzer = new Analyzer(productions);
+    analyzer.createFirstSets();
+    analyzer.createFollowSets();
+    LOGGER.info("First and follow sets calculated successfully.");
   }
 }

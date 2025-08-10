@@ -1,28 +1,19 @@
 package de.valle12.parser.grammar;
 
 import de.valle12.lexer.tokens.TokenType;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.IntStream;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@Getter
 public class Analyzer {
   private final List<String> productions;
+  private final Map<NonTerminal, Set<TokenType>> firstSets = new EnumMap<>(NonTerminal.class);
+  private final Map<NonTerminal, Set<TokenType>> followSets = initializeEmptyFollowSets();
 
-  public static void main(String[] args) throws IOException {
-    List<String> productions = Files.readAllLines(Path.of("src/main/resources/LL1.txt"));
-    Analyzer analyzer = new Analyzer(productions);
-    Map<NonTerminal, Set<TokenType>> firstSets = analyzer.createFirstSets();
-    Map<NonTerminal, Set<TokenType>> followSets = analyzer.createFollowSets(firstSets);
-    System.out.println("TEST");
-  }
-
-  public Map<NonTerminal, Set<TokenType>> createFirstSets() {
-    Map<NonTerminal, Set<TokenType>> firstSets = new EnumMap<>(NonTerminal.class);
-
+  public void createFirstSets() {
     for (int i = productions.size() - 1; i >= 0; i--) {
       String[] production = productions.get(i).split("->");
       NonTerminal nonTerminal = NonTerminal.valueOf(production[0].trim());
@@ -42,28 +33,18 @@ public class Analyzer {
 
       firstSets.put(nonTerminal, firstSet);
     }
-
-    return firstSets;
   }
 
-  public Map<NonTerminal, Set<TokenType>> createFollowSets(
-      Map<NonTerminal, Set<TokenType>> firstSets) {
-    Map<NonTerminal, Set<TokenType>> followSets = initializeEmptyFollowSets();
+  public void createFollowSets() {
     for (String production : productions) {
       String[] productionParts = production.split("->");
       NonTerminal nonTerminal = NonTerminal.valueOf(productionParts[0].trim());
       List<String> rhsNonTerminalProductions = getProductionsWhereNonTerminalIsOnRhs(nonTerminal);
-      extractFollows(rhsNonTerminalProductions, nonTerminal, firstSets, followSets);
+      extractFollows(rhsNonTerminalProductions, nonTerminal);
     }
-
-    return followSets;
   }
 
-  private void extractFollows(
-      List<String> rhsNonTerminalProductions,
-      NonTerminal rhsNonTerminal,
-      Map<NonTerminal, Set<TokenType>> firstSets,
-      Map<NonTerminal, Set<TokenType>> followSets) {
+  private void extractFollows(List<String> rhsNonTerminalProductions, NonTerminal rhsNonTerminal) {
     for (String production : rhsNonTerminalProductions) {
       String[] productionParts = production.split("->");
       NonTerminal lhsNonTerminal = NonTerminal.valueOf(productionParts[0].trim());
@@ -77,7 +58,7 @@ public class Analyzer {
                 .filter(i -> tokens[i].equals(rhsNonTerminal.name()))
                 .findFirst()
                 .orElse(-1);
-        followSet.addAll(determineFollowSet(index, tokens, firstSets, followSets, lhsNonTerminal));
+        followSet.addAll(determineFollowSet(index, tokens, lhsNonTerminal));
       }
 
       followSets.get(rhsNonTerminal).addAll(followSet);
@@ -88,11 +69,7 @@ public class Analyzer {
   }
 
   private Set<TokenType> determineFollowSet(
-      int index,
-      String[] tokens,
-      Map<NonTerminal, Set<TokenType>> firstSets,
-      Map<NonTerminal, Set<TokenType>> followSets,
-      NonTerminal lhsNonTerminal) {
+      int index, String[] tokens, NonTerminal lhsNonTerminal) {
     if (index == -1) return Set.of();
     Set<TokenType> followSet = new HashSet<>();
 
@@ -116,12 +93,12 @@ public class Analyzer {
   }
 
   private Map<NonTerminal, Set<TokenType>> initializeEmptyFollowSets() {
-    Map<NonTerminal, Set<TokenType>> followSets = new EnumMap<>(NonTerminal.class);
+    Map<NonTerminal, Set<TokenType>> sets = new EnumMap<>(NonTerminal.class);
     for (NonTerminal nonTerminal : NonTerminal.values()) {
-      followSets.put(nonTerminal, new HashSet<>());
+      sets.put(nonTerminal, new HashSet<>());
     }
 
-    return followSets;
+    return sets;
   }
 
   private List<String> getProductionsWhereNonTerminalIsOnRhs(NonTerminal nonTerminal) {
