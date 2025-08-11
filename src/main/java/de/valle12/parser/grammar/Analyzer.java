@@ -10,38 +10,70 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public class Analyzer {
   private final List<String> productions;
-  private final Map<NonTerminal, Set<TokenType>> firstSets = new EnumMap<>(NonTerminal.class);
+  private final Map<NonTerminal, Set<TokenType>> generalFirstSets =
+      new EnumMap<>(NonTerminal.class);
+  private final Map<NonTerminal, RhsProduction> fineGrainedFirstSets =
+      new EnumMap<>(NonTerminal.class);
   private final Map<NonTerminal, Set<TokenType>> followSets = initializeEmptyFollowSets();
 
-  public void createFirstSets() {
+  public void start() {
+    createFirstSets();
+    createFollowSets();
+  }
+
+  void createFirstSets() {
     for (int i = productions.size() - 1; i >= 0; i--) {
       String[] production = productions.get(i).split("->");
-      NonTerminal nonTerminal = NonTerminal.valueOf(production[0].trim());
+      NonTerminal lhsNonTerminal = NonTerminal.valueOf(production[0].trim());
+      String[] productionRules = production[1].split("\\|");
+      Map<Symbol, Set<TokenType>> rhsFirstSets = new HashMap<>();
+      for (String productionRule : productionRules) {
+        Set<TokenType> firstSet = new HashSet<>();
+        String[] tokens = productionRule.trim().split(" ");
+        String token = tokens[0].trim();
+        Symbol symbol;
 
-      Set<TokenType> firstSet = new HashSet<>();
-      String[] symbols = production[1].split("\\|");
-      for (String symbol : symbols) {
-        String[] tokens = symbol.trim().split(" ");
-        if (tokens.length == 1 && tokens[0].equals("ε")) {
+        if (token.equals("ε")) {
+          symbol = TokenType.EPSILON;
           firstSet.add(TokenType.EPSILON);
-        } else if (Character.isLowerCase(tokens[0].charAt(0))) {
-          firstSet.add(TokenType.valueOf(tokens[0].toUpperCase()));
+        } else if (Character.isLowerCase(token.charAt(0))) {
+          TokenType tokenType = TokenType.valueOf(token.toUpperCase());
+          symbol = tokenType;
+          firstSet.add(tokenType);
         } else {
-          firstSet.addAll(firstSets.get(NonTerminal.valueOf(tokens[0])));
+          symbol = NonTerminal.valueOf(token.toUpperCase());
+          RhsProduction rhsProduction = fineGrainedFirstSets.get(symbol);
+          rhsProduction.rhsProduction().values().forEach(firstSet::addAll);
         }
+
+        rhsFirstSets.put(symbol, firstSet);
       }
 
-      firstSets.put(nonTerminal, firstSet);
+      fineGrainedFirstSets.put(lhsNonTerminal, new RhsProduction(rhsFirstSets));
+    }
+
+    for (Map.Entry<NonTerminal, RhsProduction> entry : fineGrainedFirstSets.entrySet()) {
+      Set<TokenType> firstSet = new HashSet<>();
+      for (Set<TokenType> set : entry.getValue().rhsProduction().values()) {
+        firstSet.addAll(set);
+      }
+
+      generalFirstSets.put(entry.getKey(), firstSet);
     }
   }
 
-  public void createFollowSets() {
+  void createFollowSets() {
     for (String production : productions) {
       String[] productionParts = production.split("->");
       NonTerminal nonTerminal = NonTerminal.valueOf(productionParts[0].trim());
       List<String> rhsNonTerminalProductions = getProductionsWhereNonTerminalIsOnRhs(nonTerminal);
       extractFollows(rhsNonTerminalProductions, nonTerminal);
     }
+  }
+
+  void createParsingTable() {
+    // potentially map of maps, to display 2d table
+    // NonTerminal -> (TokenType -> List<Symbol>)
   }
 
   private void extractFollows(List<String> rhsNonTerminalProductions, NonTerminal rhsNonTerminal) {
@@ -80,7 +112,7 @@ public class Analyzer {
       followSet.add(TokenType.valueOf(tokens[index + 1].trim().toUpperCase()));
     } else {
       NonTerminal nextNonTerminal = NonTerminal.valueOf(tokens[index + 1].trim());
-      Set<TokenType> firstSet = new HashSet<>(firstSets.get(nextNonTerminal));
+      Set<TokenType> firstSet = new HashSet<>(generalFirstSets.get(nextNonTerminal));
       if (firstSet.contains(TokenType.EPSILON)) {
         firstSet.remove(TokenType.EPSILON);
         firstSet.addAll(followSets.get(lhsNonTerminal));

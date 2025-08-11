@@ -2,10 +2,11 @@ package de.valle12.lexer.tokens;
 
 import de.valle12.lexer.regex.Regex;
 import de.valle12.lexer.regex.RegexPatterns;
+import de.valle12.parser.grammar.Symbol;
 import lombok.Getter;
 
 @Getter
-public enum TokenType {
+public enum TokenType implements Symbol {
   RETURN(Regex.literal("return")),
   SEMICOLON(Regex.literal(';')),
   CLASS(Regex.literal("int")),

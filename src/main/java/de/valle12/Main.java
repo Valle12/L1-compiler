@@ -1,7 +1,6 @@
 package de.valle12;
 
 import de.valle12.lexer.Lexer;
-import de.valle12.lexer.regex.*;
 import de.valle12.lexer.tokens.IToken;
 import de.valle12.parser.grammar.Analyzer;
 import java.io.IOException;
@@ -27,8 +26,7 @@ public class Main {
     LOGGER.info("Calculate first and follow sets...");
     List<String> productions = Files.readAllLines(Path.of("src/main/resources/LL1.txt"));
     Analyzer analyzer = new Analyzer(productions);
-    analyzer.createFirstSets();
-    analyzer.createFollowSets();
+    analyzer.start();
     LOGGER.info("First and follow sets calculated successfully.");
   }
 }

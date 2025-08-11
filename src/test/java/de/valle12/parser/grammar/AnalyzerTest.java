@@ -28,7 +28,7 @@ class AnalyzerTest {
   void test1() {
     analyzer.createFirstSets();
 
-    Map<NonTerminal, Set<TokenType>> firstSets = analyzer.getFirstSets();
+    Map<NonTerminal, Set<TokenType>> firstSets = analyzer.getGeneralFirstSets();
     assertEquals(Set.of(TokenType.CLASS), firstSets.get(NonTerminal.PROGRAM));
     assertEquals(
         Set.of(

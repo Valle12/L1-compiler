@@ -1,6 +1,6 @@
 package de.valle12.parser.grammar;
 
-public enum NonTerminal {
+public enum NonTerminal implements Symbol {
   PROGRAM,
   STMTS,
   STMT,
