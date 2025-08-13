@@ -1,10 +1,13 @@
 package de.valle12.parser.grammar;
 
 import de.valle12.lexer.tokens.TokenType;
+import java.io.FileWriter;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 
 @RequiredArgsConstructor
 @Getter
@@ -15,10 +18,14 @@ public class Analyzer {
   private final Map<NonTerminal, RhsProduction> fineGrainedFirstSets =
       new EnumMap<>(NonTerminal.class);
   private final Map<NonTerminal, Set<TokenType>> followSets = initializeEmptyFollowSets();
+  private final Map<NonTerminal, Map<TokenType, List<List<Symbol>>>> parsingTable =
+      new EnumMap<>(NonTerminal.class);
 
   public void start() {
     createFirstSets();
     createFollowSets();
+    createParsingTable();
+    exportParsingTableToCsv();
   }
 
   void createFirstSets() {
@@ -71,9 +78,52 @@ public class Analyzer {
     }
   }
 
+  // TODO EOF missing, because there is no production NonTerminal -> EOF
   void createParsingTable() {
-    // potentially map of maps, to display 2d table
-    // NonTerminal -> (TokenType -> List<Symbol>)
+    for (String production : productions) {
+      Map<TokenType, List<List<Symbol>>> columnToCell = new EnumMap<>(TokenType.class);
+
+      String[] productionParts = production.split("->");
+      NonTerminal lhsNonTerminal = NonTerminal.valueOf(productionParts[0].trim());
+      String[] rhsProductions = productionParts[1].split("\\|");
+      for (String rhsProduction : rhsProductions) {
+        List<Symbol> symbols = new ArrayList<>();
+        String[] tokens = rhsProduction.trim().split(" ");
+        for (String token : tokens) {
+          if (rhsProduction.trim().equals("ε")) {
+            symbols.add(TokenType.EPSILON);
+          } else if (Character.isLowerCase(token.charAt(0))) {
+            symbols.add(TokenType.valueOf(token.trim().toUpperCase()));
+          } else {
+            symbols.add(NonTerminal.valueOf(token.trim().toUpperCase()));
+          }
+        }
+
+        Set<TokenType> firstSetSymbols =
+            fineGrainedFirstSets.get(lhsNonTerminal).rhsProduction().get(symbols.getFirst());
+
+        // First Set
+        firstSetSymbols.forEach(
+            token -> {
+              if (!columnToCell.containsKey(token)) columnToCell.put(token, new ArrayList<>());
+              columnToCell.get(token).add(symbols);
+            });
+
+        // Follow Set for epsilon in first set
+        if (firstSetSymbols.contains(TokenType.EPSILON)) {
+          followSets
+              .get(lhsNonTerminal)
+              .forEach(
+                  token -> {
+                    if (!columnToCell.containsKey(token))
+                      columnToCell.put(token, new ArrayList<>());
+                    columnToCell.get(token).add(symbols);
+                  });
+        }
+      }
+
+      parsingTable.put(lhsNonTerminal, columnToCell);
+    }
   }
 
   private void extractFollows(List<String> rhsNonTerminalProductions, NonTerminal rhsNonTerminal) {
@@ -141,5 +191,43 @@ public class Analyzer {
               return s1.contains(nonTerminal.name() + " ") || s1.endsWith(nonTerminal.name());
             })
         .toList();
+  }
+
+  @SneakyThrows
+  private void exportParsingTableToCsv() {
+    Set<TokenType> allTokenTypes = new TreeSet<>();
+    for (Map<TokenType, List<List<Symbol>>> row : parsingTable.values()) {
+      allTokenTypes.addAll(row.keySet());
+    }
+
+    allTokenTypes.remove(TokenType.EPSILON);
+
+    try (FileWriter writer = new FileWriter("src/main/resources/parsing-table.csv")) {
+      writer.append("NT\\TT");
+      for (TokenType tokenType : allTokenTypes) {
+        writer.append(",").append(tokenType.toString());
+      }
+      writer.append("\n");
+
+      for (Map.Entry<NonTerminal, Map<TokenType, List<List<Symbol>>>> entry :
+          parsingTable.entrySet()) {
+        writer.append(entry.getKey().toString());
+        Map<TokenType, List<List<Symbol>>> row = entry.getValue();
+        for (TokenType tokenType : allTokenTypes) {
+          writer.append(",");
+          List<List<Symbol>> symbolLists = row.get(tokenType);
+          if (symbolLists != null && !symbolLists.isEmpty()) {
+            String cell =
+                symbolLists.stream()
+                    .map(list -> list.toString().replace(",", " "))
+                    .collect(Collectors.joining(";"));
+            writer.append(cell);
+          } else {
+            writer.append("-");
+          }
+        }
+        writer.append("\n");
+      }
+    }
   }
 }
