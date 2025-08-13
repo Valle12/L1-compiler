@@ -1,5 +1,6 @@
 package de.valle12.parser.grammar;
 
+import de.valle12.parser.grammar.table.ParsingTable;
 import de.valle12.parser.grammar.table.ParsingTableCreator;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,7 +9,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Analyzer {
+public class Preprocessor {
   @SneakyThrows
   public static void main(String[] args) {
     LOGGER.info("Calculate first and follow sets...");
@@ -29,7 +30,11 @@ public class Analyzer {
             firstSetsCreator.getFineGrainedFirstSets(),
             followSetsCreator.getFollowSets());
     parsingTableCreator.createParsingTable();
-    parsingTableCreator.exportParsingTableToCsv();
     LOGGER.info("Parsing table created successfully.");
+
+    ParsingTable parsingTable = parsingTableCreator.getParsingTable();
+    parsingTable.saveTableToFile();
+    parsingTable.exportParsingTableToCsv();
+    LOGGER.info("Parsing table saved to file and exported to CSV successfully.");
   }
 }
