@@ -13,5 +13,6 @@ public enum NonTerminal implements Symbol {
   ASNOP,
   EXP2,
   BINOP,
-  DECL2
+  DECL2,
+  EOF
 }
