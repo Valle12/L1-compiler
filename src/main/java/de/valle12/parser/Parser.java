@@ -2,6 +2,8 @@ package de.valle12.parser;
 
 import static de.valle12.parser.grammar.NonTerminal.*;
 
+import de.valle12.exception.ContinueException;
+import de.valle12.exception.EmptyException;
 import de.valle12.lexer.tokens.IToken;
 import de.valle12.lexer.tokens.TokenType;
 import de.valle12.parser.grammar.Action;
@@ -10,68 +12,34 @@ import de.valle12.parser.grammar.Symbol;
 import de.valle12.parser.grammar.table.ParsingTable;
 import de.valle12.parser.grammar.table.ParsingTableProduction;
 import de.valle12.parser.node.*;
-import java.util.List;
-import java.util.Optional;
-import java.util.Stack;
-import lombok.RequiredArgsConstructor;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 
-@RequiredArgsConstructor
 @Slf4j
-public class Parser {
-  private final List<IToken> tokens;
-  private final ParsingTable parsingTable;
-
+public record Parser(List<IToken> tokens, ParsingTable parsingTable) {
   public Optional<Node> start() {
-    Stack<Symbol> symbolStack = new Stack<>();
+    Deque<Symbol> symbolStack = new ArrayDeque<>();
     symbolStack.push(TokenType.EOF);
     symbolStack.push(PROGRAM);
 
-    Stack<Node> nodeStack = new Stack<>();
+    Deque<Node> nodeStack = new ArrayDeque<>();
 
     int index = 0;
     while (!symbolStack.isEmpty()) {
       Symbol symbol = symbolStack.peek();
       IToken token = tokens.get(index);
 
-      if (symbol instanceof NonTerminal) {
-        List<ParsingTableProduction> productions =
-            parsingTable.table().get(symbol).row().get(token.type());
-        if (productions == null || productions.isEmpty()) {
-          syntaxError(token, symbol);
-          return Optional.empty();
-        }
-
-        addNewNode(symbol, nodeStack);
-
-        symbolStack.pop();
-        List<Symbol> symbols = productions.getFirst().symbols();
-        symbolStack.push(Action.FINISH);
-
-        for (int i = symbols.size() - 1; i >= 0; i--) {
-          symbolStack.push(symbols.get(i));
-        }
-      } else if (symbol instanceof TokenType) {
-        if (symbol == TokenType.EPSILON) {
-          symbolStack.pop();
-          continue;
-        }
-
-        if (symbol != token.type()) {
-          syntaxError(token, symbol);
-          return Optional.empty();
-        }
-
-        symbolStack.pop();
-        nodeStack.peek().appendChild(new NodeTerminal(token));
-        index++;
-      } else if (symbol instanceof Action) {
-        symbolStack.pop();
-        if (!(nodeStack.peek() instanceof NodeProgram)) {
-          Node node = nodeStack.pop();
-          nodeStack.peek().appendChild(node);
-        }
+      try {
+        handleNonTerminal(symbol, token, symbolStack, nodeStack);
+        int i = handleTerminal(symbol, token, symbolStack, nodeStack, index);
+        if (i != -1) index = i;
+      } catch (ContinueException e) {
+        continue;
+      } catch (EmptyException e) {
+        return Optional.empty();
       }
+
+      handleAction(symbol, symbolStack, nodeStack);
     }
 
     if (nodeStack.size() != 1) {
@@ -86,7 +54,7 @@ public class Parser {
     LOGGER.error("Syntax error at token {}: expected {}, found {}", token, symbol, token.type());
   }
 
-  private void addNewNode(Symbol symbol, Stack<Node> nodeStack) {
+  private void addNewNode(Symbol symbol, Deque<Node> nodeStack) {
     switch (symbol) {
       case PROGRAM -> nodeStack.push(new NodeProgram());
       case STMTS -> nodeStack.push(new NodeStmts());
@@ -108,6 +76,61 @@ public class Parser {
       case ADDOP -> nodeStack.push(new NodeAddop());
       case MULOP -> nodeStack.push(new NodeMulop());
       default -> LOGGER.error("{} is not implemented yet", symbol);
+    }
+  }
+
+  private void handleNonTerminal(
+      Symbol symbol, IToken token, Deque<Symbol> symbolStack, Deque<Node> nodeStack)
+      throws EmptyException {
+    if (symbol instanceof NonTerminal) {
+      List<ParsingTableProduction> productions =
+          parsingTable.table().get(symbol).row().get(token.type());
+      if (productions == null || productions.isEmpty()) {
+        syntaxError(token, symbol);
+        throw new EmptyException();
+      }
+
+      addNewNode(symbol, nodeStack);
+
+      symbolStack.pop();
+      List<Symbol> symbols = productions.getFirst().symbols();
+      symbolStack.push(Action.FINISH);
+
+      for (int i = symbols.size() - 1; i >= 0; i--) {
+        symbolStack.push(symbols.get(i));
+      }
+    }
+  }
+
+  private int handleTerminal(
+      Symbol symbol, IToken token, Deque<Symbol> symbolStack, Deque<Node> nodeStack, int index)
+      throws ContinueException, EmptyException {
+    if (symbol instanceof TokenType) {
+      if (symbol == TokenType.EPSILON) {
+        symbolStack.pop();
+        throw new ContinueException();
+      }
+
+      if (symbol != token.type()) {
+        syntaxError(token, symbol);
+        throw new EmptyException();
+      }
+
+      symbolStack.pop();
+      if (nodeStack.peek() != null) nodeStack.peek().appendChild(new NodeTerminal(token));
+      return index + 1;
+    }
+
+    return -1;
+  }
+
+  private void handleAction(Symbol symbol, Deque<Symbol> symbolStack, Deque<Node> nodeStack) {
+    if (symbol instanceof Action) {
+      symbolStack.pop();
+      if (!(nodeStack.peek() instanceof NodeProgram)) {
+        Node node = nodeStack.pop();
+        if (nodeStack.peek() != null) nodeStack.peek().appendChild(node);
+      }
     }
   }
 }

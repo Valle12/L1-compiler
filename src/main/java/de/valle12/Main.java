@@ -30,9 +30,7 @@ public class Main {
     ParsingTable parsingTable = ParsingTable.loadTableFromFile();
     Parser parser = new Parser(tokens, parsingTable);
     Optional<Node> optionalAst = parser.start();
-    if (optionalAst.isPresent()) {
-      Node ast = optionalAst.get();
-      LOGGER.info("Parsing successful. AST generated."); // TODO flatten into list and compare with token stream in test
-    }
+    if (optionalAst.isEmpty()) System.exit(1);
+    LOGGER.info("Parsing finished successfully.");
   }
 }
