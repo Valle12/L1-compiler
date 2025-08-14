@@ -26,6 +26,7 @@ public record Parser(List<IToken> tokens, ParsingTable parsingTable) {
 
     int index = 0;
     while (!symbolStack.isEmpty()) {
+      if (tokens().isEmpty()) return Optional.empty();
       Symbol symbol = symbolStack.peek();
       IToken token = tokens.get(index);
 
@@ -79,7 +80,7 @@ public record Parser(List<IToken> tokens, ParsingTable parsingTable) {
     }
   }
 
-  private void handleNonTerminal(
+  void handleNonTerminal(
       Symbol symbol, IToken token, Deque<Symbol> symbolStack, Deque<Node> nodeStack)
       throws EmptyException {
     if (symbol instanceof NonTerminal) {
@@ -102,11 +103,11 @@ public record Parser(List<IToken> tokens, ParsingTable parsingTable) {
     }
   }
 
-  private int handleTerminal(
+  int handleTerminal(
       Symbol symbol, IToken token, Deque<Symbol> symbolStack, Deque<Node> nodeStack, int index)
       throws ContinueException, EmptyException {
     if (symbol instanceof TokenType) {
-      if (symbol == TokenType.EPSILON) {
+      if (symbol == TokenType.EPSILON || symbol == TokenType.EOF) {
         symbolStack.pop();
         throw new ContinueException();
       }
@@ -124,7 +125,7 @@ public record Parser(List<IToken> tokens, ParsingTable parsingTable) {
     return -1;
   }
 
-  private void handleAction(Symbol symbol, Deque<Symbol> symbolStack, Deque<Node> nodeStack) {
+  void handleAction(Symbol symbol, Deque<Symbol> symbolStack, Deque<Node> nodeStack) {
     if (symbol instanceof Action) {
       symbolStack.pop();
       if (!(nodeStack.peek() instanceof NodeProgram)) {

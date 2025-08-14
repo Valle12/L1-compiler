@@ -39,21 +39,22 @@ class FollowSetsCreatorTest {
     assertEquals(Set.of(TokenType.SEMICOLON), followSets.get(NonTerminal.DECL));
     assertEquals(
         Set.of(
-            TokenType.DECIMAL,
-            TokenType.HEXADECIMAL,
-            TokenType.IDENTIFIER,
-            TokenType.LEFT_PARENTHESIS,
-            TokenType.MINUS),
-        followSets.get(NonTerminal.UNOP));
-    assertEquals(
-        Set.of(
-            TokenType.MINUS,
+            TokenType.STAR,
+            TokenType.SLASH,
             TokenType.PERCENT,
             TokenType.PLUS,
-            TokenType.RIGHT_PARENTHESIS,
+            TokenType.MINUS,
+            TokenType.EQUALS,
+            TokenType.PLUS_EQUALS,
+            TokenType.MINUS_EQUALS,
+            TokenType.STAR_EQUALS,
+            TokenType.SLASH_EQUALS,
+            TokenType.PERCENT_EQUALS,
             TokenType.SEMICOLON,
-            TokenType.STAR,
-            TokenType.SLASH),
-        followSets.get(NonTerminal.EXP));
+            TokenType.RIGHT_PARENTHESIS),
+        followSets.get(NonTerminal.UNARY));
+    assertEquals(
+        Set.of(TokenType.RIGHT_PARENTHESIS, TokenType.SEMICOLON),
+        followSets.get(NonTerminal.ASSIGN));
   }
 }
