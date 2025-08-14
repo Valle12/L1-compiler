@@ -2,6 +2,8 @@ package de.valle12;
 
 import de.valle12.lexer.Lexer;
 import de.valle12.lexer.tokens.IToken;
+import de.valle12.parser.Parser;
+import de.valle12.parser.grammar.table.ParsingTable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,5 +23,10 @@ public class Main {
     Lexer lexer = new Lexer(content);
     List<IToken> tokens = lexer.start();
     LOGGER.info("Extracted {} tokens.", tokens.size());
+
+    LOGGER.info("Starting to parse tokens...");
+    ParsingTable parsingTable = ParsingTable.loadTableFromFile();
+    Parser parser = new Parser(tokens, parsingTable);
+    parser.start();
   }
 }

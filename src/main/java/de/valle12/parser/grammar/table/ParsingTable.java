@@ -9,15 +9,7 @@ import lombok.SneakyThrows;
 
 public record ParsingTable(Map<NonTerminal, ParsingTableRow> table) implements Serializable {
   @SneakyThrows
-  public void saveTableToFile() {
-    try (ObjectOutputStream out =
-        new ObjectOutputStream(new FileOutputStream("src/main/resources/parsing-table.bin"))) {
-      out.writeObject(table);
-    }
-  }
-
-  @SneakyThrows
-  public ParsingTable loadTableFromFile() {
+  public static ParsingTable loadTableFromFile() {
     try (ObjectInputStream in =
         new ObjectInputStream(new FileInputStream("src/main/resources/parsing-table.bin"))) {
       if (!(in.readObject() instanceof Map<?, ?> map)) {
@@ -37,6 +29,14 @@ public record ParsingTable(Map<NonTerminal, ParsingTableRow> table) implements S
       }
 
       return new ParsingTable(loadedTable);
+    }
+  }
+
+  @SneakyThrows
+  public void saveTableToFile() {
+    try (ObjectOutputStream out =
+        new ObjectOutputStream(new FileOutputStream("src/main/resources/parsing-table.bin"))) {
+      out.writeObject(table);
     }
   }
 
