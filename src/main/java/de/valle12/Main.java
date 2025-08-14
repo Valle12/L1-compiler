@@ -4,10 +4,12 @@ import de.valle12.lexer.Lexer;
 import de.valle12.lexer.tokens.IToken;
 import de.valle12.parser.Parser;
 import de.valle12.parser.grammar.table.ParsingTable;
+import de.valle12.parser.node.Node;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -27,6 +29,10 @@ public class Main {
     LOGGER.info("Starting to parse tokens...");
     ParsingTable parsingTable = ParsingTable.loadTableFromFile();
     Parser parser = new Parser(tokens, parsingTable);
-    parser.start();
+    Optional<Node> optionalAst = parser.start();
+    if (optionalAst.isPresent()) {
+      Node ast = optionalAst.get();
+      LOGGER.info("Parsing successful. AST generated."); // TODO flatten into list and compare with token stream in test
+    }
   }
 }

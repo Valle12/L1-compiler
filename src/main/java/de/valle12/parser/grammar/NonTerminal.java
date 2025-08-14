@@ -7,11 +7,17 @@ public enum NonTerminal implements Symbol {
   DECL,
   SIMP,
   LVALUE,
-  EXP,
+  ASSIGN,
+  ADD,
+  MUL,
+  UNARY,
+  ASSIGN2,
+  ADD2,
+  MUL2,
+  DECL2,
+  PRIMARY,
   INTCONST,
-  UNOP,
   ASNOP,
-  EXP2,
-  BINOP,
-  DECL2
+  ADDOP,
+  MULOP
 }
