@@ -5,6 +5,7 @@ import de.valle12.lexer.tokens.IToken;
 import de.valle12.parser.Parser;
 import de.valle12.parser.grammar.table.ParsingTable;
 import de.valle12.parser.node.Node;
+import de.valle12.semantics.NameAnalysis;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,5 +33,11 @@ public class Main {
     Optional<Node> optionalAst = parser.start();
     if (optionalAst.isEmpty()) System.exit(1);
     LOGGER.info("Parsing finished successfully.");
+
+    LOGGER.info("Starting to analyze the AST...");
+    Node ast = optionalAst.get();
+    NameAnalysis nameAnalysis = new NameAnalysis(ast);
+    if (nameAnalysis.start()) System.exit(1);
+    LOGGER.info("Analysis finished successfully.");
   }
 }

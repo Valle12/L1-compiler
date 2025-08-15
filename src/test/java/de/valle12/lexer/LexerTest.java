@@ -13,17 +13,31 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class LexerTest {
+  private static Stream<Arguments> provideFilesAndSizes() {
+    return Stream.of(
+        Arguments.of("src/test/resources/comments-test1.l1", 48),
+        Arguments.of("src/test/resources/comments-test2.l1", 7),
+        Arguments.of("src/test/resources/line-endings-test1.l1", 7),
+        Arguments.of("src/test/resources/line-endings-test2.l1", 7),
+        Arguments.of("src/test/resources/whitespaces-test1.l1", 7),
+        // 3 for comments and 1 for EPSILON that is only created syntactically
+        Arguments.of("src/test/resources/tokens-test1.l1", TokenType.values().length - 4),
+        Arguments.of("src/test/resources/tokens-test2.l1", 11));
+  }
+
   @Test
   @DisplayName("Test skipLines method with comments-test1.l1")
   @SneakyThrows
@@ -435,13 +449,7 @@ class LexerTest {
 
   @ParameterizedTest(name = "Test start method with file {0} expecting {1} tokens")
   @DisplayName("Test start method with various input files")
-  @CsvSource({
-    "src/test/resources/comments-test1.l1,48",
-    "src/test/resources/comments-test2.l1,7",
-    "src/test/resources/line-endings-test1.l1,7",
-    "src/test/resources/line-endings-test2.l1,7",
-    "src/test/resources/whitespaces-test1.l1,7",
-  })
+  @MethodSource("provideFilesAndSizes")
   @SneakyThrows
   void test28(String file, int expectedSize) {
     String input = Files.readString(Path.of(file));
