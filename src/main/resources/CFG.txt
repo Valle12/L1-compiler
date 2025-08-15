@@ -1,0 +1,18 @@
+PROGRAM -> class main left_parenthesis right_parenthesis left_brace STMTS right_brace
+STMTS -> ε | STMT STMTS
+STMT -> DECL semicolon | SIMP semicolon | return ASSIGN semicolon
+DECL -> class identifier | class identifier equals ASSIGN
+SIMP -> LVALUE ASNOP ASSIGN
+LVALUE -> identifier | left_parenthesis LVALUE right_parenthesis
+ASSIGN -> ADD ASSIGN2
+ADD -> MUL ADD2
+MUL -> UNARY MUL2
+UNARY -> minus UNARY | PRIMARY
+ASSIGN2 -> ASNOP ASSIGN | ε
+ADD2 -> ADDOP MUL ADD2 | ε
+MUL2 -> MULOP UNARY MUL2 | ε
+PRIMARY -> left_parenthesis ASSIGN right_parenthesis | INTCONST | identifier
+INTCONST -> decimal | hexadecimal
+ASNOP -> equals | plus_equals | minus_equals | star_equals | slash_equals | percent_equals
+ADDOP -> plus | minus
+MULOP -> star | slash | percent

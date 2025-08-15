@@ -1,0 +1,5 @@
+src/test/resources/comments-test1.l1 text eol=crlf
+src/test/resources/comments-test2.l1 text eol=crlf
+src/test/resources/line-endings-test1.l1 text eol=lf
+src/test/resources/line-endings-test2.l1 text eol=cr
+src/test/resources/whitespaces-test1.l1 text eol=crlf

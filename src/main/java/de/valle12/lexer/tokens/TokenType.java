@@ -2,10 +2,11 @@ package de.valle12.lexer.tokens;
 
 import de.valle12.lexer.regex.Regex;
 import de.valle12.lexer.regex.RegexPatterns;
+import de.valle12.parser.grammar.Symbol;
 import lombok.Getter;
 
 @Getter
-public enum TokenType {
+public enum TokenType implements Symbol {
   RETURN(Regex.literal("return")),
   SEMICOLON(Regex.literal(';')),
   CLASS(Regex.literal("int")),
@@ -22,6 +23,7 @@ public enum TokenType {
   STAR_EQUALS(Regex.literal("*=")),
   SLASH_EQUALS(Regex.literal("/=")),
   PERCENT_EQUALS(Regex.literal("%=")),
+  MAIN(Regex.literal("main")),
   IDENTIFIER(RegexPatterns.IDENTIFIER_REGEX),
   DECIMAL(RegexPatterns.DECIMAL_REGEX),
   HEXADECIMAL(RegexPatterns.HEXADECIMAL_REGEX),
@@ -31,6 +33,7 @@ public enum TokenType {
   SINGLE_LINE_COMMENT(Regex.literal("//")),
   MULTI_LINE_COMMENT_BEGIN(Regex.literal("/*")),
   MULTI_LINE_COMMENT_END(Regex.literal("*/")),
+  EPSILON(Regex.EPSILON),
   EOF(Regex.EMPTY);
 
   private final Regex r;

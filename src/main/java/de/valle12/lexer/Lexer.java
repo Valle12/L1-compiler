@@ -36,7 +36,11 @@ public class Lexer {
     IToken token;
     do {
       token = nextToken();
-      tokens.add(token);
+      if (token.type() != TokenType.SINGLE_LINE_COMMENT
+          && token.type() != TokenType.MULTI_LINE_COMMENT_BEGIN
+          && token.type() != TokenType.MULTI_LINE_COMMENT_END) {
+        tokens.add(token);
+      }
     } while (token.type() != TokenType.EOF);
 
     return tokens;

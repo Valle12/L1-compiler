@@ -1,7 +1,15 @@
 <component name="ProjectDictionaryState">
   <dictionary name="project">
     <words>
+      <w>addop</w>
       <w>appenders</w>
+      <w>asnop</w>
+      <w>binop</w>
+      <w>decnum</w>
+      <w>hexnum</w>
+      <w>intconst</w>
+      <w>mulop</w>
+      <w>unop</w>
     </words>
   </dictionary>
 </component>

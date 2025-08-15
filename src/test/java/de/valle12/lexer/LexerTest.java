@@ -436,10 +436,10 @@ class LexerTest {
   @ParameterizedTest(name = "Test start method with file {0} expecting {1} tokens")
   @DisplayName("Test start method with various input files")
   @CsvSource({
-    "src/test/resources/comments-test1.l1,54",
-    "src/test/resources/comments-test2.l1,8",
-    "src/test/resources/line-endings-test1.l1,8",
-    "src/test/resources/line-endings-test2.l1,8",
+    "src/test/resources/comments-test1.l1,48",
+    "src/test/resources/comments-test2.l1,7",
+    "src/test/resources/line-endings-test1.l1,7",
+    "src/test/resources/line-endings-test2.l1,7",
     "src/test/resources/whitespaces-test1.l1,7",
   })
   @SneakyThrows

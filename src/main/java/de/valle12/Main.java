@@ -1,12 +1,15 @@
 package de.valle12;
 
 import de.valle12.lexer.Lexer;
-import de.valle12.lexer.regex.*;
 import de.valle12.lexer.tokens.IToken;
+import de.valle12.parser.Parser;
+import de.valle12.parser.grammar.table.ParsingTable;
+import de.valle12.parser.node.Node;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -22,5 +25,12 @@ public class Main {
     Lexer lexer = new Lexer(content);
     List<IToken> tokens = lexer.start();
     LOGGER.info("Extracted {} tokens.", tokens.size());
+
+    LOGGER.info("Starting to parse tokens...");
+    ParsingTable parsingTable = ParsingTable.loadTableFromFile();
+    Parser parser = new Parser(tokens, parsingTable);
+    Optional<Node> optionalAst = parser.start();
+    if (optionalAst.isEmpty()) System.exit(1);
+    LOGGER.info("Parsing finished successfully.");
   }
 }

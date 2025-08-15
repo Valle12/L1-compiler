@@ -6,7 +6,7 @@ int main() {
     int e = c + d;
     int f*/int f = a * b + c;
     int g = f - 50 / 2;
-    returnint f ;
+    return f ;
     // Final calculation
     return g % 3;
 }
