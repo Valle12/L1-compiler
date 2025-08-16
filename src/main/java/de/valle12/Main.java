@@ -1,5 +1,6 @@
 package de.valle12;
 
+import de.valle12.ir.IR;
 import de.valle12.lexer.Lexer;
 import de.valle12.lexer.tokens.IToken;
 import de.valle12.parser.Parser;
@@ -39,5 +40,10 @@ public class Main {
     NameAnalysis nameAnalysis = new NameAnalysis(ast);
     if (nameAnalysis.start()) System.exit(1);
     LOGGER.info("Analysis finished successfully.");
+
+    LOGGER.info("Starting to generate IR...");
+    IR ir = new IR();
+    ir.start(ast);
+    LOGGER.info("IR generation finished successfully.");
   }
 }
